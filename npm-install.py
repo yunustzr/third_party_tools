@@ -1,6 +1,11 @@
 import requests
 import os
 
+# @restart/ui paketi ve bağımlılıklarını indirme
+package_name = ["@babel/runtime","react-redux","@fortawesome/fontawesome-svg-core","react-animated-css","react-router-dom","react-dom"]
+limit = 2  # İstediğiniz sayıda sürümü sınırlayabilirsiniz
+
+
 def is_package_downloaded(package_name, version, base_directory):
     package_directory = os.path.join(base_directory, package_name, version)
     tarball_file_name = f"{package_name}-{version}.tgz"
@@ -13,9 +18,6 @@ def download_package_and_dependencies(package_name, version, base_directory):
         return
 
     package_directory = os.path.join(base_directory, package_name, version)
-    print(f"packagedirectory : {package_directory}")
-    print(f"package_name : {package_name}")
-
     package_url = f"https://registry.npmjs.org/{package_name}/{version}"
     response = requests.get(package_url)
     
@@ -37,8 +39,6 @@ def download_package_and_dependencies(package_name, version, base_directory):
     tarball_file_path = package_directory+"/"+tarball_file_name
     directories = os.path.dirname(tarball_file_path)
     os.makedirs(directories, exist_ok=True)
-    print(f"directories : {directories}")
-    
     
     with open(tarball_file_path, "wb") as f:
         f.write(tarball_response.content)
@@ -47,6 +47,8 @@ def download_package_and_dependencies(package_name, version, base_directory):
 
     dependencies = package_data.get("dependencies", {})
     for dependency_name, dependency_version in dependencies.items():
+        if dependency_version.startswith("^"):
+            dependency_version = dependency_version[1:]
         download_package_and_dependencies(dependency_name, dependency_version, package_directory)
 
 def npm_packages_limit_versions(limit, packages):
@@ -71,9 +73,7 @@ def npm_packages_limit_versions(limit, packages):
     
     return all_packages_data
 
-# @restart/ui paketi ve bağımlılıklarını indirme
-package_name = ["@fortawesome/fontawesome-svg-core","react-animated-css","react-router-dom","react-dom"]
-limit = 2  # İstediğiniz sayıda sürümü sınırlayabilirsiniz
+
 packages_data = npm_packages_limit_versions(limit, package_name)
 base_download_directory = "downloaded_packages"
 
@@ -83,4 +83,3 @@ for package_info in packages_data:
     for version in package_versions:
         print(f"package :{package_name} ,version {version}")
         download_package_and_dependencies(package_name, version, base_download_directory)
-
